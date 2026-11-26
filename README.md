@@ -1,5 +1,7 @@
 # Fraud Response Tracker
 
+> **CodeSprint-2026-Falcons.** — lets cook.
+
 A mobile-first reporting and case-tracking MVP for people affected by online fraud. It combines guided intake, secure evidence handling, duplicate hints, a transparent status timeline, officer review tools, and immediate safety guidance.
 
 > **Important:** This is an independent guidance and tracking service, not a government or law-enforcement authority. It does not file a report with a bank or the National Cyber Crime Reporting Portal. If money was just transferred in India, call **1930** and contact the bank immediately. Submit an official report at [cybercrime.gov.in](https://cybercrime.gov.in/).
