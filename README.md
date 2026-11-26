@@ -105,3 +105,4 @@ Use the victim account to report and track a case; the officer account to review
 - Incident descriptions and evidence are sensitive. This MVP restricts evidence reads through authenticated API access, but production deployment should add database/object-store encryption policies, retention and deletion workflows, malware scanning, stronger content inspection, audit-log retention controls, and privacy/legal review.
 - The upload adapter uses Cloudinary authenticated resources when configured. Local disk storage is a development fallback and is not suitable for a horizontally scaled or ephemeral production host.
 - Analytics are operational counts, not predictions or guarantees of recovery. The optional assistant is informational and never has access to other users' case records.
+# CodeSprint-2026-final
