@@ -1,0 +1,178 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  VICTIM
+  OFFICER
+  ADMIN
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  EVIDENCE_REQUESTED
+  FORWARDED
+  ACTION_TAKEN
+  RESOLVED
+  CLOSED
+  REJECTED
+}
+
+enum IdentifierType {
+  TRANSACTION_ID
+  UPI_ID
+  PHONE
+  URL
+  ACCOUNT
+}
+
+model User {
+  id            String         @id @default(cuid())
+  phone         String         @unique
+  name          String?
+  email         String?
+  role          Role           @default(VICTIM)
+  createdAt     DateTime       @default(now())
+  complaints    Complaint[]
+  assignedCases Complaint[]    @relation("AssignedOfficer")
+  notifications Notification[]
+  otpSessions   OtpSession[]
+  auditEntries  OfficerAuditLog[]
+
+  @@index([role])
+}
+
+model Complaint {
+  id              String                 @id @default(cuid())
+  caseId          String                 @unique
+  userId          String
+  assignedToId    String?
+  fraudType       String
+  summary         String
+  amount          Decimal?               @db.Decimal(12, 2)
+  incidentAt      DateTime?
+  details         Json
+  status          ComplaintStatus        @default(SUBMITTED)
+  rejectionReason String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  resolvedAt      DateTime?
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo      User?                  @relation("AssignedOfficer", fields: [assignedToId], references: [id], onDelete: SetNull)
+  evidence        Evidence[]
+  history         StatusHistory[]
+  suspectLinks    ComplaintSuspectLink[]
+  notifications   Notification[]
+  auditEntries    OfficerAuditLog[]
+
+  @@index([caseId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Evidence {
+  id           String    @id @default(cuid())
+  complaintId  String
+  originalName String
+  storedName   String
+  mimeType     String
+  size         Int
+  storagePath  String
+  uploadedById String
+  createdAt    DateTime  @default(now())
+  complaint    Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId])
+}
+
+model StatusHistory {
+  id              String          @id @default(cuid())
+  complaintId     String
+  status          ComplaintStatus
+  note            String?
+  visibleToVictim Boolean         @default(true)
+  changedById     String?
+  createdAt       DateTime        @default(now())
+  complaint       Complaint       @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([complaintId, createdAt])
+}
+
+model SuspectIdentifier {
+  id             String                 @id @default(cuid())
+  type           IdentifierType
+  value          String
+  normalized     String
+  createdAt      DateTime               @default(now())
+  complaintLinks ComplaintSuspectLink[]
+
+  @@unique([type, normalized])
+  @@index([type, value])
+  @@index([normalized])
+}
+
+model ComplaintSuspectLink {
+  complaintId  String
+  identifierId String
+  createdAt    DateTime          @default(now())
+  complaint    Complaint         @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  identifier   SuspectIdentifier @relation(fields: [identifierId], references: [id], onDelete: Cascade)
+
+  @@id([complaintId, identifierId])
+  @@index([identifierId])
+}
+
+model Notification {
+  id          String     @id @default(cuid())
+  userId      String
+  complaintId String?
+  title       String
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  complaint   Complaint? @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model OtpSession {
+  id         String    @id @default(cuid())
+  phone      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  userId     String?
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([phone, createdAt])
+}
+
+model OfficerAuditLog {
+  id          String     @id @default(cuid())
+  actorId     String
+  complaintId String?
+  action      String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  actor       User       @relation(fields: [actorId], references: [id], onDelete: Cascade)
+  complaint   Complaint? @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([complaintId, createdAt])
+}
+
+model CaseSequence {
+  year       Int      @id
+  nextNumber Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
